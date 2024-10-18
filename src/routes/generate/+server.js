@@ -41,6 +41,8 @@ async function makeReplicateRequestPrivate(prompt) {
     }
   }
 
+  const public_dev = "091495765fa5ef2725a175a57b276ec30dc9d39c22d30410f2ede68a3eab66b3"
+  const public_schnell = "2a6b576af31790b470f0a8442e1e9791213fa13799cbb65a9fc1436e96389574"
   /**
    * @param {string} prompt - The prompt for the prediction
    * @returns {Promise<ReplicateResponse | undefined>} - The prediction result
@@ -52,7 +54,7 @@ async function makeReplicateRequestPrivate(prompt) {
       'Content-Type': 'application/json',
     };
     const body = JSON.stringify({
-      version: "091495765fa5ef2725a175a57b276ec30dc9d39c22d30410f2ede68a3eab66b3",
+      version: public_schnell,
       input: {
         prompt,
         hf_lora: "aklevecz/finn_flux"
