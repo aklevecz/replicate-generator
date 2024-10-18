@@ -69,8 +69,6 @@ export async function POST({ request }) {
 
 export async function GET({url}) {
     const id = url.searchParams.get('id')
-    console.log(id)
-    // https://api.replicate.com/v1/predictions/
     const res = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {headers})
     const data = await res.json()
     console.log(data)
