@@ -1,7 +1,6 @@
 <script>
   import LoadingSpinner from "$lib/loading-spinner.svelte";
-
-
+  import generate from "$lib/stores/generate.svelte";
 
   let fetching = $state(false);
 
@@ -19,19 +18,13 @@
   async function handleClick() {
     fetching = true;
     try {
-      const res = await fetch("/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt: text.toLocaleLowerCase().replaceAll("finn", "a white cat") }),
-      });
-      /** @type {ReplicateResponse} */
-      const data = await res.json();
-      console.log(data)
+      let data = await generate.createGeneration(text);
+      if (!data?.id) {
+        throw new Error("id is missing");
+      }
       pollGeneration(data.id);
-    } catch (e) {
-      alert("something bad happened :(");
+    } catch (/** @type {*} */ e) {
+      alert(e.message);
     }
     // fetching = false;
   }
@@ -39,7 +32,7 @@
   /** @param {string} id */
   async function pollGeneration(id) {
     /** @type {*} */
-    let interval = null
+    let interval = null;
     let intervalMs = 1000;
     let maxTimeout = 60 * 1000 * 6;
     let intervalStart = Date.now();
@@ -47,25 +40,22 @@
     interval = setInterval(async () => {
       const res = await fetch(`/generate?id=${id}`);
       const data = await res.json();
-      console.log(data)
+      console.log(data);
       if (data.status === "succeeded") {
         fetching = false;
         status = "succeeded";
         outputs = data.output;
         clearInterval(interval);
-
       } else if (data.status === "failed") {
         fetching = false;
         status = "failed";
         clearInterval(interval);
-
       } else if (data.status === "canceled") {
         fetching = false;
         status = "canceled";
         clearInterval(interval);
-
       }
-      let timeElapsed = Date.now() - intervalStart
+      let timeElapsed = Date.now() - intervalStart;
       if (timeElapsed > maxTimeout) {
         fetching = false;
         status = "canceled";
@@ -76,8 +66,10 @@
 </script>
 
 <div class="container">
+  <h1>FLUX</h1>
   {#if fetching}<LoadingSpinner />{/if}
-  <img class="generated-img" src={outputs[0]} alt="Generated" />
+  {#if outputs[0]}<img class="generated-img" src={outputs[0]} alt="Generated" />{/if}
+  {#if !outputs[0]}<img style="width: 200px;margin-bottom: 1rem;" src="/egg.svg" alt="egg" />{/if}
   <input type="text" bind:value={text} onkeydown={(e) => e.key === "Enter" && handleClick()} />
   <button disabled={fetching} onclick={handleClick}>{fetching ? "Loading..." : "Generate"}</button>
 </div>
