@@ -10,7 +10,8 @@ export const GenerationErrors = {
 }
 
 const createGenerateStore = () => {
-    const generate = $state({})
+    /** @type {{generating: boolean, status: Status, outputs: any[]}} */
+    const generate = $state({generating: false, status: 'idle', outputs:[]})
     
     return {
         get state() {
@@ -25,14 +26,56 @@ const createGenerateStore = () => {
          * @throws Will log an error if the request fails.
          */
         createGeneration: async (prompt) => {
+            generate.generating = true
             try {
-                let res = await api.generate(prompt)
-                let data = await res.json()
+                let data = await api.generate(prompt)
                 return data
             } catch (error) {
                 console.error(error)
-                throw new Error(GenerationErrors.NETWORK)
             }
+        },
+        
+        /**
+         * Periodically polls the API to check on the status of a generation.
+         * If the generation has finished, updates the state and clears the interval.
+         * If the generation times out (defined by `maxTimeout`), clears the interval and
+         * sets the state to "canceled".
+         *
+         * @param {string} id - The generation ID to poll.
+         * @returns {Promise<number>} The ID of the interval that was set.
+         */
+        pollGeneration: async (id) => {
+            /** @type {*} */
+            let interval = null;
+            let intervalMs = 1000;
+            let maxTimeout = 60 * 1000 * 6;
+            let intervalStart = Date.now();
+            generate.generating = true;
+            interval = setInterval(async () => {
+            const data = await api.checkGeneration(id)
+            console.log(data);
+            if (data.status === "succeeded") {
+                generate.generating = false;
+                generate.status = "succeeded";
+                generate.outputs = data.output;
+                clearInterval(interval);
+            } else if (data.status === "failed") {
+                generate.generating = false;
+                generate.status = "failed";
+                clearInterval(interval);
+            } else if (data.status === "canceled") {
+                generate.generating = false;
+                generate.status = "canceled";
+                clearInterval(interval);
+            }
+            let timeElapsed = Date.now() - intervalStart;
+            if (timeElapsed > maxTimeout) {
+                generate.generating = false;
+                generate.status = "canceled";
+                clearInterval(interval);
+            }
+            }, intervalMs);
+            return interval
         }
     }
 }

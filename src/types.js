@@ -1,4 +1,4 @@
-/** @typedef {('starting'|'processing'|'succeeded'|'failed'|'canceled')} Status */
+/** @typedef {('idle'|'starting'|'processing'|'succeeded'|'failed'|'canceled')} Status */
 
 /**
  * @typedef {Object} ReplicateResponse
