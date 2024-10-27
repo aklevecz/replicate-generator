@@ -1,4 +1,5 @@
 <script>
+  import configuration from "$lib/configuration";
   import LoadingSpinner from "$lib/loading-spinner.svelte";
   import generate from "$lib/stores/generate.svelte";
 
@@ -66,7 +67,7 @@
 </script>
 
 <div class="container">
-  <h1>FLUX</h1>
+  <h1>{configuration.model}</h1>
   {#if fetching}<LoadingSpinner />{/if}
   {#if outputs[0]}<img class="generated-img" src={outputs[0]} alt="Generated" />{/if}
   {#if !outputs[0]}<img style="width: 200px;margin-bottom: 1rem;" src="/egg.svg" alt="egg" />{/if}
@@ -92,12 +93,20 @@
     margin-bottom: 1em;
     width: 80%;
     max-width: 500px;
+    background: none;
+    border: 2px solid white;
+    color: white;
   }
   button {
     padding: 0.5rem;
     font-size: 1.5rem;
+    background: none;
+    border: 4px solid white;
+    color: white;
   }
   .generated-img {
     max-width: 100%;
+    max-width: 500px;
+    margin-bottom:1rem;
   }
 </style>
