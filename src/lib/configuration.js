@@ -1,5 +1,5 @@
 export default {
-    triggerWord: "a white cat",
-    promptWord: "finn",
-    model: "aklevecz/finn_flux",
+    triggerWord: "a french bulldog",
+    promptWord: "bao",
+    model: "aklevecz/bao-flux-schnell",
 }

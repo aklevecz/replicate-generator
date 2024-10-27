@@ -1,4 +1,5 @@
 import { REPLICATE_API_TOKEN } from "$env/static/private";
+import configuration from "$lib/configuration";
 import { json } from "@sveltejs/kit";
 
 const headers = {
@@ -17,7 +18,7 @@ async function makeReplicateRequestPrivate(prompt) {
     const body = JSON.stringify({
       input: {
         prompt: prompt,
-        hf_lora: 'aklevecz/finn_flux',
+        hf_lora: configuration.model,
       }
     });
   
@@ -57,7 +58,7 @@ async function makeReplicateRequestPrivate(prompt) {
       version: public_schnell,
       input: {
         prompt,
-        hf_lora: "aklevecz/finn_flux"
+        hf_lora: configuration.model
       }
     });
   
