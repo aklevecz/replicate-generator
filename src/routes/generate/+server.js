@@ -55,7 +55,7 @@ async function makeReplicateRequestPrivate(prompt) {
       'Content-Type': 'application/json',
     };
     const body = JSON.stringify({
-      version: public_schnell,
+      version: public_dev,
       input: {
         prompt,
         hf_lora: configuration.model

@@ -1,23 +1,15 @@
 <script>
   import configuration from "$lib/configuration";
-  import LoadingSpinner from "$lib/loading-spinner.svelte";
   import generate from "$lib/stores/generate.svelte";
-
-  // let fetching = $state(false);
+  import history from "$lib/stores/history.svelte";
+  import { onMount } from "svelte";
 
   let text = $state("");
-
-  // /** @type {string[]} */
-  // let outputs = $state([]);
-
-  // /** @type {{cancel: string, get: string}}} */
-  // let urls = $state({ cancel: "", get: "" });
-
-  // /** @type {Status} */
-  // let status = $state("starting");
+  /** @type {HTMLTextAreaElement | null}*/
+  let textArea = $state(null);
 
   async function handleClick() {
-    // fetching = true;
+    generate.reset();
     try {
       let data = await generate.createGeneration(text);
       if (!data?.id) {
@@ -27,19 +19,39 @@
     } catch (/** @type {*} */ e) {
       alert(e.message);
     }
-    // fetching = false;
   }
 
-
+  onMount(() => {
+    history.init()
+  })
 </script>
 
 <div class="container">
   <h1>{configuration.model}</h1>
-  {#if generate.state.generating}<LoadingSpinner />{/if}
   {#if generate.state.outputs[0]}<img class="generated-img" src={generate.state.outputs[0]} alt="Generated" />{/if}
-  {#if !generate.state.outputs[0]}<img style="width: 100px;margin-bottom: 1rem;" src="/egg.svg" alt="egg" />{/if}
-  <input type="text" bind:value={text} onkeydown={(e) => e.key === "Enter" && handleClick()} />
-  <button disabled={generate.state.generating} onclick={handleClick}>{generate.state.generating ? "Loading..." : "Generate"}</button>
+  {#if !generate.state.outputs[0]}<img
+      class="egg"
+      class:pulse={generate.state.generating}
+      src="/egg.svg"
+      alt="egg"
+    />{/if}
+  <textarea
+    bind:this={textArea}
+    bind:value={text}
+    onkeydown={(e) => e.key === "Enter" && handleClick()}
+    disabled={generate.state.generating}>{text}</textarea
+  >
+  <button class:fade-pulse={generate.state.generating} disabled={generate.state.generating} onclick={handleClick}
+    >{generate.state.generating ? "Generating..." : "Generate"}</button
+  >
+  <h2>History</h2>
+  <div>
+    {#each history.state as item, index}
+      <div class="history-item">
+        <img src={item} alt="Generated" style="width:50px;height:50px;"/>
+      </div>
+    {/each}
+  </div>
 </div>
 
 <style>
@@ -54,11 +66,12 @@
     justify-content: center;
     height: 100vh;
   }
-  input {
+  textarea {
     padding: 0.5rem;
     font-size: 1rem;
     margin-bottom: 1em;
     width: 80%;
+    height: 100px;
     max-width: 500px;
     background: none;
     border: 2px solid white;
@@ -68,48 +81,17 @@
     padding: 0.5rem;
     font-size: 1.5rem;
     background: none;
-    border: 4px solid white;
+    border: 2px solid white;
     color: white;
   }
   .generated-img {
     max-width: 100%;
     max-width: 500px;
-    margin-bottom:1rem;
+    margin-bottom: 1rem;
+  }
+  .egg {
+    width: 100px;
+    margin: 1rem;
+    margin-bottom: 2.5rem;
   }
 </style>
-
-
-  <!-- /** @param {string} id */
-  async function pollGeneration(id) {
-    /** @type {*} */
-    let interval = null;
-    let intervalMs = 1000;
-    let maxTimeout = 60 * 1000 * 6;
-    let intervalStart = Date.now();
-    fetching = true;
-    interval = setInterval(async () => {
-      const res = await fetch(`/generate?id=${id}`);
-      const data = await res.json();
-      console.log(data);
-      if (data.status === "succeeded") {
-        fetching = false;
-        status = "succeeded";
-        outputs = data.output;
-        clearInterval(interval);
-      } else if (data.status === "failed") {
-        fetching = false;
-        status = "failed";
-        clearInterval(interval);
-      } else if (data.status === "canceled") {
-        fetching = false;
-        status = "canceled";
-        clearInterval(interval);
-      }
-      let timeElapsed = Date.now() - intervalStart;
-      if (timeElapsed > maxTimeout) {
-        fetching = false;
-        status = "canceled";
-        clearInterval(interval);
-      }
-    }, intervalMs);
-  } -->
