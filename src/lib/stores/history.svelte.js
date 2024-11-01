@@ -1,6 +1,7 @@
 import storage from "$lib/storage";
 
 const createHistoryStore = () => {
+    /** @type {string[]} */
     let history = $state([]);
    
     return {
@@ -10,13 +11,13 @@ const createHistoryStore = () => {
         init: () => {
             history = storage.getHistory();
         },
-        add: (item) => {
+        add: (/** @type {string} */ item) => {
             storage.updateHistory(item);
             history = [...history, item];
         },
-        remove: (index) => {
-            history = history.filter((_, i) => i !== index);
-        },
+        // remove: (index) => {
+        //     history = history.filter((_, i) => i !== index);
+        // },
         clear: () => {
             history = [];
         },

@@ -1,17 +1,19 @@
 <script>
-  import configuration from "$lib/configuration";
+  import configurations from "$lib/configurations";
+  import History from "$lib/history.svelte";
+  import ModelSelector from "$lib/model-selector.svelte";
+  import ProgressBar from "$lib/progress-bar.svelte";
   import generate from "$lib/stores/generate.svelte";
   import history from "$lib/stores/history.svelte";
   import { onMount } from "svelte";
 
   let text = $state("");
-  /** @type {HTMLTextAreaElement | null}*/
-  let textArea = $state(null);
+  let model = $state(configurations["aklevecz/bao-flux"].model);
 
   async function handleClick() {
     generate.reset();
     try {
-      let data = await generate.createGeneration(text);
+      let data = await generate.createGeneration(text, model);
       if (!data?.id) {
         throw new Error("id is missing");
       }
@@ -21,22 +23,29 @@
     }
   }
 
+  let generatedImg = $derived(generate.state.outputs[0]);
+
   onMount(() => {
-    history.init()
-  })
+    history.init();
+  });
 </script>
 
 <div class="container">
-  <h1>{configuration.model}</h1>
-  {#if generate.state.outputs[0]}<img class="generated-img" src={generate.state.outputs[0]} alt="Generated" />{/if}
-  {#if !generate.state.outputs[0]}<img
-      class="egg"
-      class:pulse={generate.state.generating}
-      src="/egg.svg"
-      alt="egg"
-    />{/if}
+  <!-- <h1>{model}</h1> -->
+  <div>Select model</div>
+  <ModelSelector bind:model />
+  {#if generatedImg}
+    <img class="generated-img" src={generatedImg} alt="Generated" />{/if}
+  {#if !generatedImg}<img class="egg" class:pulse={generate.state.generating} src="/egg.svg" alt="egg" />{/if}
+  {#if generate.state.generating}<div>
+      {generate.state.percentage === 0 ? "starting..." : generate.state.percentage}
+    </div>
+    <div style="width:70%;margin-bottom:1rem;">
+      <ProgressBar />
+    </div>
+  {/if}
   <textarea
-    bind:this={textArea}
+    placeholder="Enter prompt here..."
     bind:value={text}
     onkeydown={(e) => e.key === "Enter" && handleClick()}
     disabled={generate.state.generating}>{text}</textarea
@@ -44,28 +53,18 @@
   <button class:fade-pulse={generate.state.generating} disabled={generate.state.generating} onclick={handleClick}
     >{generate.state.generating ? "Generating..." : "Generate"}</button
   >
-  <h2>History</h2>
-  <div>
-    {#each history.state as item, index}
-      <div class="history-item">
-        <img src={item} alt="Generated" style="width:50px;height:50px;"/>
-      </div>
-    {/each}
-  </div>
+  <History />
 </div>
 
 <style>
-  :global(html, body) {
-    color: white;
-    background-color: black;
-  }
   .container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    min-height: 100vh;
   }
+
   textarea {
     padding: 0.5rem;
     font-size: 1rem;
@@ -77,16 +76,11 @@
     border: 2px solid white;
     color: white;
   }
-  button {
-    padding: 0.5rem;
-    font-size: 1.5rem;
-    background: none;
-    border: 2px solid white;
-    color: white;
-  }
+
   .generated-img {
     max-width: 100%;
     max-width: 500px;
+    max-height: 300px;
     margin-bottom: 1rem;
   }
   .egg {

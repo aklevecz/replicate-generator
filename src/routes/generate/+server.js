@@ -1,5 +1,6 @@
 import { REPLICATE_API_TOKEN } from "$env/static/private";
-import configuration from "$lib/configuration";
+import configurations from "$lib/configurations";
+// import configuration from "$lib/configuration";
 import { json } from "@sveltejs/kit";
 
 const headers = {
@@ -12,50 +13,52 @@ const headers = {
  * @param {string} prompt - The prompt for the prediction
  * @returns {Promise<ReplicateResponse>}
  */
-async function makeReplicateRequestPrivate(prompt) {
-    const url = 'https://api.replicate.com/v1/deployments/aklevecz/cog-flux-schnell-lora/predictions';
+// async function makeReplicateRequestPrivate(prompt) {
+//     const url = 'https://api.replicate.com/v1/deployments/aklevecz/cog-flux-schnell-lora/predictions';
     
-    const body = JSON.stringify({
-      input: {
-        prompt: prompt,
-        hf_lora: configuration.model,
-      }
-    });
+//     const body = JSON.stringify({
+//       input: {
+//         prompt: prompt,
+//         hf_lora: configuration.model,
+//       }
+//     });
   
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: body
-      });
+//     try {
+//       const response = await fetch(url, {
+//         method: 'POST',
+//         headers: headers,
+//         body: body
+//       });
   
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+//       if (!response.ok) {
+//         throw new Error(`HTTP error! status: ${response.status}`);
+//       }
   
-      const data = await response.json();
-      console.log(data);
-      return data;
-    } catch (error) {
-      console.error('There was a problem with the fetch operation:', error);
-      throw error;
-    }
-  }
+//       const data = await response.json();
+//       console.log(data);
+//       return data;
+//     } catch (error) {
+//       console.error('There was a problem with the fetch operation:', error);
+//       throw error;
+//     }
+//   }
 
   const public_dev = "091495765fa5ef2725a175a57b276ec30dc9d39c22d30410f2ede68a3eab66b3"
   const public_schnell = "2a6b576af31790b470f0a8442e1e9791213fa13799cbb65a9fc1436e96389574"
+  const version = public_schnell
   /**
    * @param {string} prompt - The prompt for the prediction
+   * @param {import("$lib/configurations").Configuration} configuration - The configuration for the prediction
    * @returns {Promise<ReplicateResponse | undefined>} - The prediction result
    */
-  const makeReplicateRequestPublic = async (prompt) => {
+  const makeReplicateRequestPublic = async (prompt, configuration) => {
     const url = 'https://api.replicate.com/v1/predictions';
     const headers = {
       'Authorization': `Bearer ${REPLICATE_API_TOKEN}`,
       'Content-Type': 'application/json',
     };
     const body = JSON.stringify({
-      version: public_dev,
+      version: configuration.replicateId,
       input: {
         prompt,
         hf_lora: configuration.model
@@ -84,8 +87,9 @@ async function makeReplicateRequestPrivate(prompt) {
 
 /** @type {import('./$types').RequestHandler} */
 export async function POST({ request }) {
-  const { prompt } = await request.json();
-  const data = await makeReplicateRequestPublic(prompt);
+  const { prompt, model } = await request.json();
+  const configuration = configurations[model];
+  const data = await makeReplicateRequestPublic(prompt, configuration);
   return json(data);
 }
 

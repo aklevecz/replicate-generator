@@ -10,8 +10,8 @@ export const GenerationErrors = {
   INVALID_ID: "Invalid generation ID received",
 };
 
-/** @type {{generating: boolean, status: Status, outputs: any[]}} */
-const defaultState = { generating: false, status: "idle", outputs: [] };
+/** @type {{generating: boolean, status: Status, outputs: any[], percentage: number}} */
+const defaultState = { generating: false, status: "idle", outputs: [], percentage: 0 };
 const createGenerateStore = () => {
   let generate = $state({ ...defaultState });
 
@@ -24,13 +24,14 @@ const createGenerateStore = () => {
      * a request to the API.
      *
      * @param {string} prompt - The text prompt used for generating data.
+     * @param {string} model - The model used for generating data.
      * @returns {Promise<ReplicateResponse | undefined>} - A promise that resolves with the generated data.
      * @throws Will log an error if the request fails.
      */
-    createGeneration: async (prompt) => {
+    createGeneration: async (prompt, model) => {
       generate.generating = true;
       try {
-        let data = await api.generate(prompt);
+        let data = await api.generate(prompt, model);
         return data;
       } catch (error) {
         console.error(error);
@@ -56,25 +57,49 @@ const createGenerateStore = () => {
       interval = setInterval(async () => {
         const data = await api.checkGeneration(id);
         console.log(data);
+        const str = data.logs;
+        const seed = str.match(/Using seed: (\d+)/)?.[1];
+        const prompt = str.match(/Prompt: (.*?) txt2img/)?.[1];
+        const loadTime = str.match(/Loading LoRA took: ([\d.]+)/)?.[1];
+
+        // Updated regex for progress updates
+        const progressUpdates = [
+          ...str.matchAll(/(\d+)%\|[█▌▎▍▋▊▉ ]+\| (\d+)\/(\d+) \[([^\]]+)\](?:, ([\d.]+)it\/s)?/g),
+        ].map((match) => ({
+          percentage: parseInt(match[1]),
+          step: parseInt(match[2]),
+          totalSteps: parseInt(match[3]),
+          time: match[4],
+          iterationsPerSecond: match[5] ? parseFloat(match[5]) : null,
+        }));
+
+        try {
+          generate.percentage = progressUpdates[progressUpdates.length - 1].percentage;
+        } catch (e) {}
+
+        console.log({
+          seed,
+          prompt,
+          loadTime,
+          progressUpdates,
+        });
+        
+        generate.status = data.status;
         if (data.status === "succeeded") {
           generate.generating = false;
-          generate.status = "succeeded";
           generate.outputs = data.output;
           history.add(data.output[0]);
           clearInterval(interval);
         } else if (data.status === "failed") {
           generate.generating = false;
-          generate.status = "failed";
           clearInterval(interval);
         } else if (data.status === "canceled") {
           generate.generating = false;
-          generate.status = "canceled";
           clearInterval(interval);
         }
         let timeElapsed = Date.now() - intervalStart;
         if (timeElapsed > maxTimeout) {
           generate.generating = false;
-          generate.status = "canceled";
           clearInterval(interval);
         }
       }, intervalMs);

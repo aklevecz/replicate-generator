@@ -1,8 +1,10 @@
-import configuration from "./configuration"
+import configurations from "./configurations"
+import configuration from "./configurations"
 import { GenerationErrors } from "./stores/generate.svelte"
 
 let endpoints = {
-    generate: '/generate'
+    generate: '/generate',
+    auth: 'auth',
 }
 
 let api = () => {
@@ -12,9 +14,11 @@ let api = () => {
          * JSON. Returns the response as a Promise.
          *
          * @param {string} prompt The prompt to generate an image for.
+         * @param {string} model The model to use for generation.
          * @return {Promise<ReplicateResponse>} The response from the server.
          */
-        generate: async (prompt) => {
+        generate: async (prompt, model) => {
+            let configuration = configurations[model]
             try {
                 let res = await fetch(endpoints.generate, {
                     method: 'POST',
@@ -22,6 +26,8 @@ let api = () => {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        model: model,
+                        // could also do this server side
                         prompt: prompt.toLocaleLowerCase().replaceAll(configuration.promptWord, configuration.triggerWord)
                     })
                 })
@@ -43,7 +49,44 @@ let api = () => {
             let res = await fetch(`/generate?id=${id}`);
             let data = await res.json()
             return data
-        }
+        },
+
+        /** AUTH */
+        /** AUTH */
+		/** @param {string} phoneNumber */
+		sendCode: async (phoneNumber) => {
+			const res = await fetch(`/${endpoints.auth}`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ phoneNumber })
+			});
+			const data = await res.json();
+			return data;
+		},
+		/** @param {string} code */
+		verifyCode: async (code) => {
+			const res = await fetch(`/${endpoints.auth}`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ code })
+			});
+			const data = await res.json();
+			return data;
+		},
+		logout: async () => {
+			const res = await fetch(`/${endpoints.auth}`, {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+			const data = await res.json();
+			return data;
+		},
     }
 }
 
