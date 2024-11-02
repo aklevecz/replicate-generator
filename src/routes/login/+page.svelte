@@ -1,10 +1,6 @@
 <script>
 	import auth from '$lib/stores/auth.svelte';
-	// import rsvp from '$lib/stores/rsvp.svelte';
 	import RaptorAnimated from '$lib/raptor-animated.svelte';
-
-	/** @type {{eventName:string}} */
-	let { eventName } = $props();
 
 	let phoneNumber = $state('');
 	let code = $state('');
@@ -12,7 +8,7 @@
 	let fetching = $state(false);
 	let error = $state('');
 
-	function onRSVP() {
+	function onStartAuth() {
 		auth.updateFlow('authenticating');
 	}
 
@@ -45,9 +41,9 @@
 </script>
 
 {#if !auth.state.authorized}
-	<div class="rsvp-container">
+	<div class="login-container">
 		{#if auth.state.flow === null}
-			<button class="btn lg" onclick={onRSVP}>RSVP</button>
+			<button class="btn lg" onclick={onStartAuth}>Login</button>
 		{/if}
 		{#if auth.state.flow === 'authenticating'}
 			<div class="cta">
@@ -114,12 +110,11 @@
 {/if}
 
 <style>
-	.rsvp-container {
+	.login-container {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
 		max-width: 200px;
-		background-color: var(--accent-color);
 		padding: 1rem;
 	}
 	.cta {

@@ -10,6 +10,9 @@
     updateMaterialWithGenerated
   } from "$lib/api/three";
   import { onDestroy } from "svelte";
+  import configurations from "$lib/configurations";
+
+  let model = $state(configurations["aklevecz/bao-flux"].model);
 
   /** @type {null | HTMLElement}*/
   let container = $state(null);
@@ -32,7 +35,7 @@
   async function generatePattern() {
     generate.reset();
     try {
-      let data = await generate.createGeneration("a beautiful rose pattern");
+      let data = await generate.createGeneration("a beautiful oil painting by Georgia O'Keeffe", model);
       if (!data?.id) {
         throw new Error("id is missing");
       }

@@ -14,11 +14,11 @@
   }
 </script>
 
-<h2>History</h2>
+<h2 style="margin-top:2rem;">History</h2>
 <div class:hide={!previewImgSrc} class="preview">
     <img onclick={() => previewImgSrc = ""} src={previewImgSrc} alt="history preview" />
 </div>
-<div class="history-container">
+<div class="history-item-container">
   {#each history.state as item, index}
     <div class="history-item">
       <img onerror={removeErrorImg} onclick={() => showPreview(item)} src={item} alt="Generated" style="width:50px;height:50px;" />
@@ -27,7 +27,7 @@
 </div>
 
 <style>
-  .history-container {
+  .history-item-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -35,7 +35,9 @@
   }
 
   .preview {
-    position: absolute;
+    top:25%;
+    left:0;
+    position: fixed;
     width:100%;
     height:auto;
     /* background-color: red; */

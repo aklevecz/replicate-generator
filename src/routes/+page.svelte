@@ -29,14 +29,14 @@
     history.init();
   });
 </script>
-
 <div class="container">
+  <h2>Generator</h2>
   <!-- <h1>{model}</h1> -->
-  <div>Select model</div>
+  <div style="margin-bottom:.5rem;">Select model</div>
   <ModelSelector bind:model />
   {#if generatedImg}
-    <img class="generated-img" src={generatedImg} alt="Generated" />{/if}
-  {#if !generatedImg}<img class="egg" class:pulse={generate.state.generating} src="/egg.svg" alt="egg" />{/if}
+    <img class="generated_img" src={generatedImg} alt="Generated" />{/if}
+  {#if !generatedImg}<img class="egg_img" class:pulse={generate.state.generating} src="/egg.svg" alt="egg" />{/if}
   {#if generate.state.generating}<div>
       {generate.state.percentage === 0 ? "starting..." : generate.state.percentage}
     </div>
@@ -50,7 +50,7 @@
     onkeydown={(e) => e.key === "Enter" && handleClick()}
     disabled={generate.state.generating}>{text}</textarea
   >
-  <button class:fade-pulse={generate.state.generating} disabled={generate.state.generating} onclick={handleClick}
+  <button style="width:100px;" class:fade-pulse={generate.state.generating} disabled={generate.state.generating} onclick={handleClick}
     >{generate.state.generating ? "Generating..." : "Generate"}</button
   >
   <History />
@@ -60,9 +60,12 @@
   .container {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    /* align-items: center; */
+    max-width: 500px;
     min-height: 100vh;
+    /* width: 80%; */
+    /* margin:auto; */
+    padding:1rem 1rem;
   }
 
   textarea {
@@ -77,15 +80,13 @@
     color: white;
   }
 
-  .generated-img {
+  .generated_img {
     max-width: 100%;
     max-width: 500px;
-    max-height: 300px;
     margin-bottom: 1rem;
   }
-  .egg {
+  .egg_img {
     width: 100px;
-    margin: 1rem;
-    margin-bottom: 2.5rem;
+    margin: 1rem auto 2rem;
   }
 </style>
