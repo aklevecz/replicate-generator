@@ -1,8 +1,7 @@
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-
-// Scene components
+import modelStorage from "$lib/idb";
 
 /** @type {THREE.Scene} */
 let scene;
@@ -49,7 +48,9 @@ const materials = {
 
 // Texture handling
 const textureLoader = new THREE.TextureLoader();
-let currentTexture = null;
+
+/** @type {THREE.Texture | null} */
+export let currentTexture = null;
 
 /** @type {THREE.Mesh | null} */
 let testCube = null;
@@ -90,17 +91,23 @@ function createTestCube() {
   scene.add(testCube);
 }
 
-function loadModel() {
+/** @param {string} modelUrl */
+function loadModel(modelUrl) {
+  console.log(`Loading model: ${modelUrl}`);
   const loader = new FBXLoader();
+
+  // If there's an existing model, remove it
+  if (model) {
+    scene.remove(model);
+  }
+
   loader.load(
-    "/rose-3.fbx",
+    modelUrl,
     (object) => {
       model = object;
       model.traverse((child) => {
-        // if (child.isMesh && (child.name.includes("petal") || child.name.includes("leaf"))) {
         // @ts-ignore
         child.material = materials.standard.clone();
-        // }
       });
 
       scene.add(object);
@@ -110,6 +117,26 @@ function loadModel() {
     (error) => console.error("Error loading FBX:", error)
   );
 }
+
+/** @param {*} event */
+function handleModelUpload(event) {
+  const file = event.target.files[0];
+  modelStorage.saveModel(file);
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        // Create a blob URL from the file data
+        const blob = new Blob([e.target.result], { type: "application/octet-stream" });
+        const blobUrl = URL.createObjectURL(blob);
+        loadModel(blobUrl);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
 /** @param {THREE.Object3D} object */
 function adjustCameraToModel(object) {
   const box = new THREE.Box3().setFromObject(object);
@@ -139,9 +166,9 @@ function updateMaterialTexture(textureUrl) {
 
   if (model) {
     model.traverse((/** @type {*} */ child) => {
-      if (child.isMesh && (child.name.includes("petal") || child.name.includes("leaf"))) {
-        child.material = materials.standard.clone();
-      }
+      // if (child.isMesh && (child.name.includes("petal") || child.name.includes("leaf"))) {
+      child.material = materials.standard.clone();
+      // }
     });
   }
 
@@ -173,12 +200,32 @@ function animate() {
 }
 
 /** @param {HTMLElement} container */
-function init(container) {
+async function init(container) {
   setupScene(container);
   addLights();
   createTestCube();
-  loadModel();
+  const modelEntry = await modelStorage.getModel("model_1730671753408_d13035c2k");
+
+  // Convert ArrayBuffer to Blob URL
+  const blob = new Blob([modelEntry.data]);
+  const blobUrl = URL.createObjectURL(blob);
+
+  loadModel(blobUrl);
+  // loadModel('rose-3.fbx');
   window.addEventListener("resize", onWindowResize, false);
+}
+
+/** @param {string} modelId */
+async function loadModelByIdFromStorage(modelId) {
+  const modelObject = await modelStorage.getModel(modelId);
+  if (!modelObject) {
+    console.error(`Model not found: ${modelId}`);
+    return;
+  }
+  const blob = new Blob([modelObject.data]);
+  const blobUrl = URL.createObjectURL(blob);
+  console.log(`blobUrl: ${blobUrl}`);
+  return blobUrl
 }
 
 // Exports
@@ -187,6 +234,7 @@ export {
   animate,
   handleTextureUpload,
   updateMaterialTexture as updateMaterialWithGenerated,
+  handleModelUpload,
   scene,
   camera,
   renderer,
@@ -194,4 +242,5 @@ export {
   model,
   materials,
   onWindowResize,
+  loadModelByIdFromStorage
 };

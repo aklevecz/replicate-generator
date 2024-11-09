@@ -1,6 +1,7 @@
 const storage = () => {
   const keys = {
     history: "history",
+    lastGenerated: "last_generated"
   };
   /**
    * Get a value from the storage.
@@ -38,6 +39,13 @@ const storage = () => {
       currentHistory.push(value);
       set(keys.history, JSON.stringify(currentHistory));
     },
+    /** @param {string} value */
+    saveLastGenerated: (value) => {
+      set(keys.lastGenerated, JSON.stringify(value))
+    },
+    getLastGenerated: () => {
+      return JSON.parse(get(keys.lastGenerated) || "")
+    }
   };
 };
 

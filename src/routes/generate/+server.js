@@ -43,9 +43,6 @@ const headers = {
 //     }
 //   }
 
-  const public_dev = "091495765fa5ef2725a175a57b276ec30dc9d39c22d30410f2ede68a3eab66b3"
-  const public_schnell = "2a6b576af31790b470f0a8442e1e9791213fa13799cbb65a9fc1436e96389574"
-  const version = public_schnell
   /**
    * @param {string} prompt - The prompt for the prediction
    * @param {import("$lib/configurations").Configuration} configuration - The configuration for the prediction
@@ -61,7 +58,8 @@ const headers = {
       version: configuration.replicateId,
       input: {
         prompt,
-        hf_lora: configuration.model
+        ...configuration.modelParams
+        // hf_lora: configuration.model
       }
     });
   
@@ -98,6 +96,5 @@ export async function GET({url}) {
     const id = url.searchParams.get('id')
     const res = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {headers})
     const data = await res.json()
-    console.log(data)
     return json(data)
 }

@@ -1,41 +1,63 @@
 <script>
   import { browser } from "$app/environment";
-  import ProgressBar from "$lib/progress-bar.svelte";
-  import generate from "$lib/stores/generate.svelte";
-  import {
-    animate,
-    init,
-    onWindowResize,
-    renderer,
-    updateMaterialWithGenerated
-  } from "$lib/api/three";
-  import { onDestroy } from "svelte";
+  import { onWindowResize, updateMaterialWithGenerated } from "$lib/api/three";
+  import ProgressBar from "$lib/components/progress-bar.svelte";
+  import ThreeFileUpload from "$lib/components/three-file-upload.svelte";
+  import ThreeModelSelector from "$lib/components/three-model-selector.svelte";
   import configurations from "$lib/configurations";
+  import modelStorage from "$lib/idb";
+  import generate from "$lib/stores/generate.svelte";
+  import ThreeScene from "$lib/three";
+  import { onDestroy, onMount } from "svelte";
 
-  let model = $state(configurations["aklevecz/bao-flux"].model);
+  let model = $state(configurations["aklevecz/rds-15"].model);
+  let selectedModel = $state("");
 
+  /** @type {ThreeScene | null}*/
+  let threeModel = $state(null);
   /** @type {null | HTMLElement}*/
   let container = $state(null);
-
-  // Lifecycle hooks
-  $effect(() => {
+  onMount(async () => {
     if (container && browser) {
-      init(container);
-      animate();
+      threeModel = new ThreeScene(container);
+      threeModel.init(container);
+      threeModel.animate();
+
+      const models = await modelStorage.getRecentModels();
+
+      if (!models.length) {
+        console.error("No models found");
+        return;
+      }
+
+      const modelEntry = await modelStorage.getModel(models[0].id);
+
+      if (!modelEntry) {
+        console.error(`Model not found: ${models[0].id}`);
+        return;
+      }
+      selectedModel = modelEntry.id;
+
+      const blob = new Blob([modelEntry.data]);
+      const blobUrl = URL.createObjectURL(blob);
+
+      threeModel.loadModel(blobUrl);
     }
   });
 
   onDestroy(() => {
-    if (renderer) {
-      renderer.dispose();
+    if (threeModel && threeModel.renderer) {
+      threeModel.renderer.dispose();
     }
     browser && window.removeEventListener("resize", onWindowResize);
   });
 
+  let startedGenerating = $state(false);
   async function generatePattern() {
+    startedGenerating = true;
     generate.reset();
     try {
-      let data = await generate.createGeneration("a beautiful oil painting by Georgia O'Keeffe", model);
+      let data = await generate.createGeneration("flower", model);
       if (!data?.id) {
         throw new Error("id is missing");
       }
@@ -45,27 +67,66 @@
     }
   }
 
+  /** @type {(event: Event) => void} */
+  function handleOnChange(event) {
+    threeModel?.handleModelUpload(event);
+  }
+
+  /** @param {*} event */
+  function handleModelChange(event) {
+    const selectedKey = event.target.value;
+    console.log(`selectedKey: ${selectedKey}`);
+    selectedModel = selectedKey;
+    modelStorage.getModel(selectedModel).then((modelEntry) => {
+      if (!modelEntry) {
+        console.error(`Model not found: ${selectedModel}`);
+        return;
+      }
+      const blob = new Blob([modelEntry.data]);
+      const blobUrl = URL.createObjectURL(blob);
+      threeModel?.loadModel(blobUrl);
+    });
+  }
+
+  // $effect(() => {
+  //   if (selectedModel) {
+  //     modelStorage.getModel(selectedModel).then((modelEntry) => {
+  //       if (!modelEntry) {
+  //         console.error(`Model not found: ${selectedModel}`);
+  //         return;
+  //       }
+  //       const blob = new Blob([modelEntry.data]);
+  //       const blobUrl = URL.createObjectURL(blob);
+  //       threeModel?.loadModel(blobUrl);
+  //     });
+  //   }
+  // });
+
   $effect(() => {
     if (generate.state.outputs[0]) {
-      updateMaterialWithGenerated(generate.state.outputs[0]);
+      console.log(`generated: ${generate.state.outputs[0]}`);
+      threeModel?.updateMaterialTexture(generate.state.outputs[0]);
+      startedGenerating = false;
     }
   });
 
-  let generatedImg = $derived(generate.state.outputs[0])
+  let generatedImg = $derived(generate.state.outputs[0]);
 </script>
+
+<!-- <input type="file" accept=".fbx" onchange={handleModelUpload}> -->
+<ThreeFileUpload {handleOnChange} />
+<ThreeModelSelector {handleModelChange} {selectedModel}/>
 {#if generatedImg}<img class="generated-preview" src={generatedImg} alt="Generated" />{/if}
 <div bind:this={container} class="fbx-viewer"></div>
 <div class="controls">
-
-
-    <!-- <label>Upload Texture:</label>
+  <!-- <label>Upload Texture:</label>
     <input type="file" accept="image/*" onchange={handleTextureUpload} /> -->
-
-    <div style="font-size: 24px; font-family: monospace;">{generate.state.percentage}</div>
-    <ProgressBar />
-    <button disabled={generate.state.generating} onclick={generatePattern}
-      >{generate.state.generating ? "Generating..." : "Generate Pattern"}</button
-    >
+  {#if startedGenerating && !generate.state.percentage}<div>Warming up...</div>{/if}
+  <div style="font-size: 24px; font-family: monospace;">{generate.state.percentage}</div>
+  <ProgressBar />
+  <button disabled={generate.state.generating} onclick={generatePattern}
+    >{generate.state.generating ? "Generating..." : "Generate Pattern"}</button
+  >
 </div>
 
 <style>
@@ -94,7 +155,7 @@
     position: absolute;
     top: 0;
     right: 0;
-    width:100px;
+    width: 100px;
     height: 100px;
   }
 </style>

@@ -1,12 +1,28 @@
 <script>
-    import "../app.css";
+    import modelStorage from "$lib/idb";
+    import auth from "$lib/stores/auth.svelte";
+    import generateSvelte from "$lib/stores/generate.svelte";
+    import modelSvelte from "$lib/stores/model.svelte";
+    import { onMount } from "svelte";
     import "../animations.css";
-    let {children} = $props()
+    import "../app.css";
+    let {children, data} = $props()
+
+    onMount(() => {
+      modelStorage.init().then(() => {
+        modelSvelte.init()
+        generateSvelte.init()
+      })
+      auth.init(data)
+    })
+    
 </script>
 <nav>
   <a href="/">home</a>
   <a href="/rose">rose</a>
   <a href="/login">login</a>
+  <a href="/idb">idb</a>
+  <div>{data.user.phoneNumber}</div>
 </nav>
 {@render children()}
 <style>
@@ -30,6 +46,8 @@
     color: white;
   }
   nav {
+    display: flex;
+    gap: 1rem;
     padding-left:1rem;
   }
   a {

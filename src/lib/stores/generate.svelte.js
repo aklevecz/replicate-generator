@@ -1,4 +1,7 @@
 import api from "$lib/api";
+import modelStorage from "$lib/idb";
+import storage from "$lib/storage";
+import { fetchImageAsBase64 } from "$lib/utils";
 import history from "./history.svelte";
 
 export const GenerationErrors = {
@@ -10,14 +13,22 @@ export const GenerationErrors = {
   INVALID_ID: "Invalid generation ID received",
 };
 
-/** @type {{generating: boolean, status: Status, outputs: any[], percentage: number}} */
-const defaultState = { generating: false, status: "idle", outputs: [], percentage: 0 };
+/** @type {{generating: boolean, status: Status, outputs: any[], percentage: number, cachedImgs: GeneratedImgEntry[]}} */
+const defaultState = { generating: false, status: "idle", outputs: [], percentage: 0, cachedImgs:[] };
 const createGenerateStore = () => {
   let generate = $state({ ...defaultState });
+
+  async function refreshAllGeneratedImgs() {
+    const generatedImgs = await modelStorage.getAllGeneratedImgs();
+    generate.cachedImgs = generatedImgs;
+  }
 
   return {
     get state() {
       return generate;
+    },
+    init: async () => {
+      refreshAllGeneratedImgs();
     },
     /**
      * Asynchronously generates data based on the provided prompt by making
@@ -56,10 +67,9 @@ const createGenerateStore = () => {
       generate.generating = true;
       interval = setInterval(async () => {
         const data = await api.checkGeneration(id);
-        console.log(data);
         const str = data.logs;
         const seed = str.match(/Using seed: (\d+)/)?.[1];
-        const prompt = str.match(/Prompt: (.*?) txt2img/)?.[1];
+        const prompt = str.match(/Prompt: (.*?)(?=txt2img)/s)?.[1];
         const loadTime = str.match(/Loading LoRA took: ([\d.]+)/)?.[1];
 
         // Updated regex for progress updates
@@ -83,12 +93,20 @@ const createGenerateStore = () => {
           loadTime,
           progressUpdates,
         });
-        
+
         generate.status = data.status;
         if (data.status === "succeeded") {
           generate.generating = false;
           generate.outputs = data.output;
           history.add(data.output[0]);
+          const imgUrl = data.output[0];
+          // fetch image data and then store it in base64 string to be stored in browser storage
+          // CODE HERE
+          fetchImageAsBase64(imgUrl).then(async (base64) => {
+            storage.saveLastGenerated(base64);
+            await modelStorage.addGeneratedImg({ imgUrl, base64Url: base64, seed: seed || "", prompt: prompt || "" });
+            await refreshAllGeneratedImgs();
+          });
           clearInterval(interval);
         } else if (data.status === "failed") {
           generate.generating = false;

@@ -18,3 +18,24 @@
  * @property {string} urls.cancel - URL to cancel the prediction
  * @property {string} urls.get - URL to get the prediction details
  */
+
+/**
+ * @typedef {Object} ModelEntry
+ * @property {string} id - Unique identifier for the model
+ * @property {string} name - Original filename
+ * @property {string} type - File type (e.g., 'fbx', 'obj', 'gltf')
+ * @property {ArrayBuffer} data - The actual model file data
+ * @property {string} hash - SHA-256 hash of the model file
+ * @property {number} size - File size in bytes
+ * @property {number} timestamp - When the model was saved
+ * @property {string} [thumbnail] - Optional base64 thumbnail
+ */
+
+/**
+ * @typedef {Object} GeneratedImgEntry
+ * @property {string} id
+ * @property {string} imgUrl
+ * @property {string} base64Url
+ * @property {string} seed
+ * @property {string} prompt
+ */
