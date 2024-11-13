@@ -7,6 +7,7 @@
   import configurations from "$lib/configurations";
   import modelStorage from "$lib/idb";
   import generate from "$lib/stores/generate.svelte";
+  import modelSvelte from "$lib/stores/model.svelte";
   import ThreeScene from "$lib/three";
   import { onDestroy, onMount } from "svelte";
 
@@ -70,6 +71,16 @@
   /** @type {(event: Event) => void} */
   function handleOnChange(event) {
     threeModel?.handleModelUpload(event);
+
+    const target = /** @type {HTMLInputElement} */ (event.target);
+    const file = target.files && target.files[0];
+    if (!file) {
+      console.error("No file selected");
+      return;
+    }
+    modelStorage.saveModel(file).then(() => {
+      modelSvelte.refreshAllModels();
+    });
   }
 
   /** @param {*} event */

@@ -8,7 +8,7 @@ class ThreeScene {
     this.width = container.clientWidth;
     this.height = container.clientHeight;
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 2000);
+    this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 200000);
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.controls = null;
     this.model = null;
@@ -125,14 +125,6 @@ class ThreeScene {
     }
   }
 
-/*************  ✨ Codeium Command ⭐  *************/
-  /**
-   * @param {Event} event - An event fired when the user selects a new file in the file input.
-   * @description
-   * Handles a file upload event, saves the file to IndexedDB, and loads the model.
-   * If the file is successfully uploaded and loaded, removes the existing model and adds the new one.
-   */
-/******  eb00a272-e180-49b4-a1f7-9d504becf578  *******/
   handleModelUpload(event) {
     const file = event.target.files[0];
     modelStorage.saveModel(file);
